@@ -1,0 +1,1045 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WireChex v5.30 - WOOOO!!!! 🎉</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Inter', system_ui, sans-serif; }
+        .grid-container { overflow: auto; max-height: 900px; border: 4px solid #334155; border-radius: 24px; background: #f8fafc; }
+        svg { transition: transform 0.2s ease; width: 100%; height: auto; max-width: 1400px; }
+        .device-selected { stroke: #eab308 !important; stroke-width: 14 !important; }
+        @keyframes fadeInToast { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: translateX(0); } }
+        .animate-fade-in { animation: fadeInToast 0.25s ease-out forwards; }
+        @keyframes wirePulse {
+            0%, 100% { stroke-width: 14; stroke-opacity: 1; }
+            50% { stroke-width: 22; stroke-opacity: 0.85; }
+        }
+        .wire-path-highlight { animation: wirePulse 0.7s ease-in-out 4; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-200">
+    <div class="max-w-7xl mx-auto px-6 py-8">
+        <h1 class="text-4xl font-bold text-center mb-2">WireChex v5.30</h1>
+        <p class="text-center text-emerald-400 font-bold mb-8">Production Ready • Professional Wire Diagrams</p>
+
+        <div class="flex justify-center gap-4 mb-6 flex-wrap">
+            <div class="flex items-center gap-3 bg-slate-900 rounded-3xl px-6 py-3">
+                <span class="font-medium">Rows</span>
+                <input id="grid-rows" type="number" value="20" min="8" max="50" class="w-20 bg-slate-800 text-white text-center rounded-2xl px-3 py-2">
+            </div>
+            <div class="flex items-center gap-3 bg-slate-900 rounded-3xl px-6 py-3">
+                <span class="font-medium">Columns</span>
+                <input id="grid-cols" type="number" value="10" min="8" max="30" class="w-20 bg-slate-800 text-white text-center rounded-2xl px-3 py-2">
+            </div>
+            <button onclick="resizeGrid()" class="bg-emerald-600 hover:bg-emerald-500 px-8 py-3 rounded-3xl font-semibold">Resize Grid</button>
+            <div class="flex items-center gap-2 bg-slate-900 rounded-3xl px-6 py-3">
+                <button onclick="zoomOut()" class="px-5 py-2 bg-slate-800 hover:bg-slate-700 rounded-2xl font-bold">-</button>
+                <span id="zoom-level" class="font-mono w-12 text-center">100%</span>
+                <button onclick="zoomIn()" class="px-5 py-2 bg-slate-800 hover:bg-slate-700 rounded-2xl font-bold">+</button>
+            </div>
+            <div class="flex items-center gap-2 bg-slate-900 rounded-3xl px-4 py-3">
+                <button onclick="toggleGrid()" id="grid-toggle-btn" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-2xl font-bold text-sm flex items-center gap-1">📐 Grid <span class="text-emerald-400">ON</span></button>
+            </div>
+            <div class="flex items-center gap-2 bg-slate-900 rounded-3xl px-4 py-3">
+                <button onclick="toggleWireLabels()" id="labels-toggle-btn" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-2xl font-bold text-sm flex items-center gap-1">🏷️ Labels <span class="text-emerald-400">ON</span></button>
+            </div>
+        </div>
+
+        <div class="flex gap-6 justify-center">
+            <div>
+                <div class="grid-container mx-auto w-full max-w-[1400px]">
+                    <svg id="wirechex-svg" height="1100" viewBox="0 0 1400 1100" xmlns="http://www.w3.org/2000/svg"></svg>
+                </div>
+            </div>
+
+            <div id="device-inspector" class="hidden w-80 bg-slate-900 rounded-3xl p-6 flex-shrink-0">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-semibold text-lg">Device Inspector</h3>
+                    <button onclick="clearSelection()" class="text-slate-400 hover:text-white">✕</button>
+                </div>
+                <div id="inspector-content">
+                    <div class="text-center text-slate-400 py-8">Click any device box<br>to inspect it</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6 mt-8">
+            <div class="bg-slate-900 rounded-3xl p-6">
+                <h3 class="font-semibold mb-4 flex items-center justify-between">➕ Add Device <span class="text-emerald-400 text-xs font-normal tracking-[1.5px]">v5.30 Production Ready</span></h3>
+                
+                <!-- Quick Templates -->
+                <div class="mb-4">
+                    <div class="text-xs text-slate-400 mb-1.5 flex items-center gap-1">⚡ QUICK TEMPLATES</div>
+                    <div class="flex flex-wrap gap-2">
+                        <button onclick="useQuickTemplate(0)" class="px-3 py-1 text-xs font-medium bg-slate-800 hover:bg-emerald-600 hover:text-white border border-slate-700 rounded-2xl transition-all active:scale-95">A 4-port Left</button>
+                        <button onclick="useQuickTemplate(1)" class="px-3 py-1 text-xs font-medium bg-slate-800 hover:bg-emerald-600 hover:text-white border border-slate-700 rounded-2xl transition-all active:scale-95">B 4-port Left</button>
+                        <button onclick="useQuickTemplate(2)" class="px-3 py-1 text-xs font-medium bg-slate-800 hover:bg-emerald-600 hover:text-white border border-slate-700 rounded-2xl transition-all active:scale-95">C 2-port Left</button>
+                        <button onclick="useQuickTemplate(3)" class="px-3 py-1 text-xs font-medium bg-slate-800 hover:bg-emerald-600 hover:text-white border border-slate-700 rounded-2xl transition-all active:scale-95">R 6-port Right</button>
+                        <button onclick="useQuickTemplate(4)" class="px-3 py-1 text-xs font-medium bg-slate-800 hover:bg-emerald-600 hover:text-white border border-slate-700 rounded-2xl transition-all active:scale-95">Busbar 6R</button>
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">DEVICE NAME <span class="text-red-400">*</span></label>
+                        <input id="new-device-name" type="text" placeholder="e.g. GARMIN 8612" class="w-full bg-slate-800 border border-slate-700 focus:border-emerald-500 rounded-2xl px-4 py-3 text-lg font-bold" oninput="updateLivePreview()" onkeydown="if (event.key === 'Enter') addNewDevice()">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">LOCATION / NOTE</label>
+                        <input id="new-device-location" type="text" placeholder="e.g. *Behind Helm • Starboard" class="w-full bg-slate-800 border border-slate-700 focus:border-emerald-500 rounded-2xl px-4 py-2.5 text-sm" oninput="updateLivePreview()">
+                    </div>
+
+                    <div class="grid grid-cols-5 gap-3">
+                        <div class="col-span-3">
+                            <label class="block text-xs text-slate-400 mb-1">PORTS</label>
+                            <select id="new-device-ports" class="w-full bg-slate-800 border border-slate-700 rounded-2xl px-4 py-3" onchange="updateLivePreview()">
+                                <option value="4">4 ports</option><option value="2">2 ports</option><option value="3">3 ports</option>
+                                <option value="5">5 ports</option><option value="6">6 ports</option><option value="1">1 port</option>
+                            </select>
+                        </div>
+                        <div class="col-span-2">
+                            <label class="block text-xs text-slate-400 mb-1">COLOR</label>
+                            <div class="flex gap-2 items-center">
+                                <input id="new-device-color" type="color" value="#3b82f6" class="w-11 h-11 bg-slate-800 border border-slate-700 rounded-2xl cursor-pointer p-0.5" onchange="updateColorPreview(); updateLivePreview()">
+                                <div id="color-preview-swatch" onclick="document.getElementById('new-device-color').click()" class="flex-1 h-11 rounded-2xl border border-slate-700 flex items-center justify-center text-[10px] font-mono font-bold cursor-pointer shadow-inner overflow-hidden" style="background:#3b82f6; color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.4);">PREVIEW</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Visual Side Selector -->
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1.5">MOUNTING SIDE</label>
+                        <div class="grid grid-cols-2 gap-2" id="side-selector">
+                            <div onclick="selectSideUI('left')" id="side-card-left" class="active-side flex flex-col items-center justify-center py-2.5 rounded-2xl border-2 border-emerald-500 bg-emerald-950/40 cursor-pointer transition-all">
+                                <div class="text-xl leading-none mb-0.5">⬅️</div>
+                                <div class="font-extrabold text-xs tracking-widest">LEFT</div>
+                                <div class="text-[8px] text-emerald-400 -mt-0.5">Helm / Port</div>
+                            </div>
+                            <div onclick="selectSideUI('right')" id="side-card-right" class="flex flex-col items-center justify-center py-2.5 rounded-2xl border-2 border-slate-700 bg-slate-800 cursor-pointer transition-all hover:border-slate-500">
+                                <div class="text-xl leading-none mb-0.5">➡️</div>
+                                <div class="font-extrabold text-xs tracking-widest">RIGHT</div>
+                                <div class="text-[8px] text-slate-400 -mt-0.5">Starboard</div>
+                            </div>
+                        </div>
+                        <select id="new-device-side" class="hidden">
+                            <option value="left" selected>Left (default)</option><option value="right">Right side</option>
+                        </select>
+                    </div>
+
+                    <!-- Live Mini Preview -->
+                    <div class="bg-slate-950 rounded-2xl p-2 border border-slate-700">
+                        <div class="text-[9px] text-center text-slate-400 mb-1 font-mono tracking-widest">LIVE PREVIEW</div>
+                        <div id="live-device-preview" class="mx-auto w-[142px] rounded-[14px] overflow-hidden border-[6px] border-slate-600" style="background:#f1f5f9; box-shadow: inset 0 1px 0 rgba(255,255,255,.6), 0 10px 15px -3px rgb(0 0 0 / 0.2);">
+                            <div class="px-2.5 py-1.5 text-center">
+                                <div id="preview-name" class="font-extrabold text-xs text-black tracking-[-0.5px]">DEVICE NAME</div>
+                                <div id="preview-loc" class="text-[8px] text-slate-500 leading-none -mt-px">location note</div>
+                                <div class="flex justify-center gap-1 mt-1.5" id="preview-ports-dots"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <button onclick="addNewDevice()" class="mt-4 w-full bg-gradient-to-r from-emerald-600 via-emerald-500 to-emerald-600 hover:brightness-110 text-white font-bold py-3.5 rounded-3xl text-sm tracking-[1px] shadow-xl shadow-emerald-950/60 flex items-center justify-center gap-2">✨ ADD TO DIAGRAM <span class="text-lg leading-none">→</span></button>
+            </div>
+
+            <div class="bg-slate-900 rounded-3xl p-6">
+                <h3 class="font-semibold mb-4">🗑️ Manage Devices</h3>
+                <div id="device-list" class="space-y-3 max-h-80 overflow-auto"></div>
+            </div>
+
+            <div class="bg-slate-900 rounded-3xl p-6">
+                <h3 class="font-semibold mb-4">Add Wire</h3>
+                <select id="port-from" class="w-full bg-slate-800 border border-slate-700 rounded-2xl px-4 py-3 mb-3"></select>
+                <select id="port-to" class="w-full bg-slate-800 border border-slate-700 rounded-2xl px-4 py-3 mb-3"></select>
+                <div class="mb-4">
+                    <label class="block text-xs text-slate-400 mb-1">Wire Color</label>
+                    <select id="wire-color" class="w-full bg-slate-800 border border-slate-700 rounded-2xl px-4 py-3">
+                        <option value="#06b6d4" selected>Cyan - Network</option>
+                        <option value="#ef4444">Red - Power</option><option value="#10b981">Green - Coax</option>
+                        <option value="#f59e0b">Orange - Transducer</option><option value="#8b5cf6">Purple - Audio</option>
+                        <option value="#000000">Black - N2K</option><option value="#eab308">Yellow - Ground</option>
+                        <option value="#854d0e">Brown - Video</option><option value="#ec4899">Pink - Other</option>
+                    </select>
+                </div>
+                <button onclick="addWire()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-4 rounded-3xl text-lg">Connect (Dynamic Routing + Jumpers)</button>
+            </div>
+
+            <div class="bg-slate-900 rounded-3xl p-6">
+                <h3 class="font-semibold mb-4">Current Wires <span class="text-emerald-400 text-sm font-normal">(click 🗑️ to delete)</span></h3>
+                <div id="wire-list" class="space-y-2 max-h-64 overflow-auto"></div>
+            </div>
+
+            <div class="bg-slate-900 rounded-3xl p-6">
+                <h3 class="font-semibold mb-4">Occupied Nodes</h3>
+                <pre id="occupied-log" class="text-xs font-mono bg-slate-950 p-4 rounded-2xl h-64 overflow-auto"></pre>
+            </div>
+
+            <div class="bg-slate-900 rounded-3xl p-6">
+                <h3 class="font-semibold mb-4">Wire Color Legend</h3>
+                <div id="wire-legend" class="space-y-2"></div>
+            </div>
+        </div>
+
+        <div class="flex gap-4 justify-center mt-8">
+            <button onclick="resetAll()" class="px-6 py-3 bg-slate-700 hover:bg-slate-600 rounded-3xl">Reset All</button>
+            <button onclick="clearAllWires()" class="px-6 py-3 bg-amber-600 hover:bg-amber-500 rounded-3xl">Clear All Wires</button>
+            <button onclick="downloadSVG()" class="px-6 py-3 bg-slate-700 hover:bg-slate-600 rounded-3xl">Download SVG</button>
+        </div>
+    </div>
+
+    <!-- Toast Notifications Container -->
+    <div id="toast-container" class="fixed bottom-6 right-6 z-[100] flex flex-col gap-3 pointer-events-none"></div>
+
+    <script>
+        class WireChexEngine {
+            constructor() {
+                this.CONST = {
+                    CELL_WIDTH: 80, CELL_HEIGHT: 48, LEFT_OFFSET: 360,
+                    BOX_WIDTH: 320, HUMP_HALF_WIDTH: 20, HUMP_HEIGHT: 24,
+                    PORT_STUB_LENGTH: 30, HUMP_OVERLAP: 6,
+                    RIGHT_GAP: 60
+                };
+                this.ROWS = 20; this.COLS = 10; this.occupied = new Set();
+                this.wires = []; this.dynamicPORTS = {}; this.zoomLevel = 1;
+                this.showGrid = true;
+                this.showWireLabels = true;
+                this.devices = [
+                    { id: 'devA', name: 'A', location: '', boxColor: '#3b82f6', ports: 4, startRow: 1, side: 'left' },
+                    { id: 'devB', name: 'B', location: '', boxColor: '#10b981', ports: 4, startRow: 6, side: 'left' },
+                    { id: 'devC', name: 'C', location: '', boxColor: '#8b5cf6', ports: 2, startRow: 11, side: 'left' },
+                    { id: 'devR', name: 'R', location: '', boxColor: '#10b981', ports: 6, startRow: 0, side: 'right' }
+                ];
+                this.loadFromLocalStorage(); this.rebuildDynamicPorts();
+            }
+
+            wrapText(text, maxChars = 18) {
+                if (!text || text.length === 0) return [''];
+                const words = text.split(/\s+/);
+                const lines = [];
+                let currentLine = '';
+                for (let word of words) {
+                    if (currentLine.length + word.length + 1 > maxChars) {
+                        if (currentLine.length > 0) lines.push(currentLine);
+                        currentLine = word;
+                    } else {
+                        currentLine = currentLine.length > 0 ? currentLine + ' ' + word : word;
+                    }
+                }
+                if (currentLine.length > 0) lines.push(currentLine);
+                return lines.length > 0 ? lines : [''];
+            }
+
+            getRightPortX() { 
+                return this.CONST.LEFT_OFFSET + this.COLS * this.CONST.CELL_WIDTH + this.CONST.RIGHT_GAP + 25; 
+            }
+            
+            getRightGridLine() { 
+                return this.CONST.LEFT_OFFSET + this.COLS * this.CONST.CELL_WIDTH + this.CONST.CELL_WIDTH; 
+            }
+
+            rebuildDynamicPorts() {
+                this.dynamicPORTS = {}; let leftRow = 1; let rightRow = 1;
+                this.devices.forEach(dev => {
+                    const isRight = dev.side === 'right'; const startRow = isRight ? rightRow : leftRow;
+                    dev.startRow = startRow;
+                    for (let i = 1; i <= dev.ports; i++) {
+                        const portKey = dev.name + i;
+                        this.dynamicPORTS[portKey] = {
+                            row: startRow + i - 1, deviceColor: dev.boxColor, connectedColor: dev.boxColor,
+                            deviceId: dev.id, side: dev.side || 'left',
+                            boxX: isRight ? (this.CONST.LEFT_OFFSET + this.COLS * this.CONST.CELL_WIDTH + this.CONST.RIGHT_GAP + 5) : 20
+                        };
+                    }
+                    const rowIncrement = dev.ports + 3;
+                    if (isRight) rightRow += rowIncrement; else leftRow += rowIncrement;
+                });
+                this.updatePortColors();
+            }
+
+            updatePortColors() {
+                Object.keys(this.dynamicPORTS).forEach(key => this.dynamicPORTS[key].connectedColor = this.dynamicPORTS[key].deviceColor);
+                this.wires.forEach(w => {
+                    if (this.dynamicPORTS[w.from]) this.dynamicPORTS[w.from].connectedColor = w.color;
+                    if (this.dynamicPORTS[w.to]) this.dynamicPORTS[w.to].connectedColor = w.color;
+                });
+            }
+
+            getPortRow(port) { return this.dynamicPORTS[port] ? this.dynamicPORTS[port].row : 1; }
+
+            addDevice(name, ports, boxColor, location = '', side = 'left') {
+                if (!name || ports < 1 || ports > 6) return false;
+                let cleanName = name.trim().toUpperCase().slice(0, 12) || 'X';
+                let finalName = cleanName; let counter = 1;
+                while (this.devices.some(d => d.name === finalName)) finalName = cleanName + counter++;
+                this.devices.push({ id: 'dev' + Date.now().toString(36), name: finalName, location: location.trim(), boxColor, ports: parseInt(ports), startRow: 0, side });
+                this.rebuildDynamicPorts(); this.saveToLocalStorage(); return true;
+            }
+
+            deleteDevice(deviceId) {
+                this.wires = this.wires.filter(w => {
+                    const fp = this.dynamicPORTS[w.from]; const tp = this.dynamicPORTS[w.to];
+                    return !(fp && fp.deviceId === deviceId) && !(tp && tp.deviceId === deviceId);
+                });
+                this.devices = this.devices.filter(d => d.id !== deviceId);
+                this.reoccupyAllWires(); this.rebuildDynamicPorts(); this.saveToLocalStorage(); return true;
+            }
+
+            deleteWire(index) {
+                if (index < 0 || index >= this.wires.length) return false;
+                this.wires.splice(index, 1); this.reoccupyAllWires(); this.rebuildDynamicPorts(); this.saveToLocalStorage(); return true;
+            }
+
+            findFirstFreeColumnFromRight(row1, row2) {
+                const minR = Math.min(row1, row2); const maxR = Math.max(row1, row2);
+                for (let col = this.COLS; col >= 1; col--) {
+                    let free = true;
+                    for (let r = minR; r <= maxR; r++) {
+                        if (this.occupied.has(r + ",R" + col)) { free = false; break; }
+                    }
+                    if (free) return col;
+                }
+                return Math.floor(this.COLS / 2);
+            }
+
+            findLeftmostFreeColumn(row1, row2, side = 'left') {
+                if (side === 'right') {
+                    return this.findFirstFreeColumnFromRight(row1, row2);
+                }
+                const minR = Math.min(row1, row2); const maxR = Math.max(row1, row2);
+                for (let col = 1; col <= this.COLS; col++) {
+                    let free = true;
+                    for (let r = minR; r <= maxR; r++) if (this.occupied.has(r + ",L" + col)) { free = false; break; }
+                    if (free) return col;
+                }
+                return 5;
+            }
+
+            drawGrid(svg) {
+                const cw = this.CONST.CELL_WIDTH; const ch = this.CONST.CELL_HEIGHT; const lo = this.CONST.LEFT_OFFSET; const to = 60;
+                const rightEnd = lo + this.COLS * cw + this.CONST.RIGHT_GAP + 400;
+                const th = to + this.ROWS * ch + 80;
+                svg.setAttribute("width", rightEnd); svg.setAttribute("height", th); svg.setAttribute("viewBox", `0 0 ${rightEnd} ${th}`);
+                
+                if (!this.showGrid) return;
+                
+                for (let x = 1; x <= this.COLS; x++) {
+                    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                    line.setAttribute("x1", lo + x*cw); line.setAttribute("y1", to); line.setAttribute("x2", lo + x*cw); line.setAttribute("y2", to + this.ROWS*ch);
+                    line.setAttribute("stroke", "#334155"); line.setAttribute("stroke-width", "3"); svg.appendChild(line);
+                }
+                
+                // Perfect mirror: grid row lines stop 20px before right device box starts (symmetric to left's 20px gap after left boxes)
+                const rightBoxStart = lo + this.COLS * cw + this.CONST.RIGHT_GAP + 5;
+                const gridRightEdge = rightBoxStart - 20;
+                for (let y = 1; y <= this.ROWS; y++) {
+                    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                    line.setAttribute("x1", lo); line.setAttribute("y1", to + y*ch); line.setAttribute("x2", gridRightEdge); line.setAttribute("y2", to + y*ch);
+                    line.setAttribute("stroke", "#334155"); line.setAttribute("stroke-width", "3"); svg.appendChild(line);
+                }
+                
+                for (let x = 1; x <= this.COLS; x++) {
+                    const t = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                    t.setAttribute("x", lo + x*cw); t.setAttribute("y", to + this.ROWS*ch + 28); t.setAttribute("text-anchor", "middle"); t.setAttribute("fill", "#64748b"); t.setAttribute("font-size", "14"); t.textContent = x; svg.appendChild(t);
+                }
+                
+                for (let y = 1; y <= this.ROWS; y++) {
+                    const t = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                    t.setAttribute("x", rightEnd - 22); t.setAttribute("y", to + y*ch + 6); t.setAttribute("fill", "#64748b"); t.setAttribute("font-size", "14"); t.textContent = y; svg.appendChild(t);
+                }
+            }
+
+            drawPorts(svg) {
+                const rightPortX = this.getRightPortX();
+                Object.keys(this.dynamicPORTS).forEach(key => {
+                    const p = this.dynamicPORTS[key]; const y = 60 + p.row * this.CONST.CELL_HEIGHT;
+                    let cx, labelX, textAnchor;
+                    if (p.side === 'right') { 
+                        cx = rightPortX; 
+                        labelX = rightPortX + 28; 
+                        textAnchor = "start"; 
+                    } else { 
+                        cx = 320; 
+                        labelX = 290; 
+                        textAnchor = "end"; 
+                    }
+                    const c = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                    c.setAttribute("cx", cx); c.setAttribute("cy", y); c.setAttribute("r", "18"); c.setAttribute("fill", p.connectedColor); c.setAttribute("stroke", "#1e40af"); c.setAttribute("stroke-width", "4"); svg.appendChild(c);
+                    const lbl = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                    lbl.setAttribute("x", labelX); lbl.setAttribute("y", y + 6); lbl.setAttribute("text-anchor", textAnchor); lbl.setAttribute("fill", "#1e40af"); lbl.setAttribute("font-weight", "700"); lbl.setAttribute("font-size", "14"); lbl.textContent = key; svg.appendChild(lbl);
+                });
+            }
+
+            drawDeviceBoxes(svg) {
+                const LEFT_RIGHT_EDGE = 340; 
+                const RIGHT_COLUMN_X = this.CONST.LEFT_OFFSET + this.COLS * this.CONST.CELL_WIDTH + this.CONST.RIGHT_GAP + 5; 
+                const BOX_WIDTH = this.CONST.BOX_WIDTH;
+                
+                this.devices.forEach(dev => {
+                    const boxY = 60 + (dev.startRow - 1) * this.CONST.CELL_HEIGHT - 45;
+                    
+                    // Robust multi-line wrapping for long names & locations
+                    const nameLines = this.wrapText(dev.name, 17);
+                    const locLines = this.wrapText(dev.location || '', 20);
+                    
+                    const maxNameLines = Math.min(nameLines.length, 4);
+                    const maxLocLines = Math.min(locLines.length, 3);
+                    
+                    const nameLineH = 20;
+                    const locLineH = 15;
+                    const nameBlockH = maxNameLines * nameLineH;
+                    const locBlockH = maxLocLines > 0 ? 10 + maxLocLines * locLineH : 0;
+                    const extraH = Math.max(0, nameBlockH + locBlockH - 22); // base ~22px for single-line name
+                    const height = dev.ports * this.CONST.CELL_HEIGHT + 105 + extraH;
+                    
+                    const boxX = dev.side === 'right' ? RIGHT_COLUMN_X : LEFT_RIGHT_EDGE - BOX_WIDTH;
+                    
+                    const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+                    rect.setAttribute("x", boxX); rect.setAttribute("y", boxY); rect.setAttribute("width", BOX_WIDTH); rect.setAttribute("height", height);
+                    rect.setAttribute("fill", "#f1f5f9"); rect.setAttribute("stroke", dev.boxColor); rect.setAttribute("stroke-width", "10"); rect.setAttribute("rx", "20"); rect.setAttribute("style", "cursor: pointer;");
+                    rect.onclick = () => selectDevice(dev.id);
+                    if (currentSelectedDeviceId === dev.id) rect.classList.add('device-selected');
+                    svg.appendChild(rect);
+                    
+                    const textCenterX = boxX + BOX_WIDTH / 2;
+                    
+                    // Render wrapped name lines (dynamic font size)
+                    let nameY = boxY + 30;
+                    const nameFontSize = maxNameLines > 2 ? 14 : (maxNameLines > 1 ? 16 : 18);
+                    const nameFontWeight = maxNameLines > 1 ? "600" : "700";
+                    nameLines.slice(0, maxNameLines).forEach((line, i) => {
+                        const nameEl = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                        nameEl.setAttribute("x", textCenterX); 
+                        nameEl.setAttribute("y", nameY + i * nameLineH); 
+                        nameEl.setAttribute("text-anchor", "middle"); 
+                        nameEl.setAttribute("fill", "#000000"); 
+                        nameEl.setAttribute("font-size", nameFontSize); 
+                        nameEl.setAttribute("font-weight", nameFontWeight); 
+                        nameEl.textContent = line; 
+                        svg.appendChild(nameEl);
+                    });
+                    
+                    // Render wrapped location (smaller, gray)
+                    if (maxLocLines > 0) {
+                        let locY = nameY + maxNameLines * nameLineH + 6;
+                        const locFontSize = maxLocLines > 1 ? 10 : 11;
+                        locLines.slice(0, maxLocLines).forEach((line, i) => {
+                            const locEl = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                            locEl.setAttribute("x", textCenterX); 
+                            locEl.setAttribute("y", locY + i * locLineH); 
+                            locEl.setAttribute("text-anchor", "middle"); 
+                            locEl.setAttribute("fill", "#475569"); 
+                            locEl.setAttribute("font-size", locFontSize); 
+                            locEl.setAttribute("font-weight", "500"); 
+                            locEl.textContent = line; 
+                            svg.appendChild(locEl);
+                        });
+                    }
+                });
+            }
+
+            createWirePath(d, color, style = 'solid', wireIndex = null) {
+                const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                path.setAttribute("d", d); path.setAttribute("fill", "none"); path.setAttribute("stroke", color); path.setAttribute("stroke-width", "14"); path.setAttribute("stroke-linecap", "round");
+                if (style === 'dashed') path.setAttribute("stroke-dasharray", "28 14");
+                else if (style === 'dotted') path.setAttribute("stroke-dasharray", "4 9");
+                if (wireIndex !== null) path.setAttribute("data-wire-index", wireIndex);
+                return path;
+            }
+
+            getCrossingsForHorizontal(row, hVCol, currentWire) {
+                const crossings = [];
+                for (let other of this.wires) {
+                    if (other === currentWire || other.side !== currentWire.side) continue;
+                    const oRow1 = this.getPortRow(other.from); const oRow2 = this.getPortRow(other.to);
+                    const oMin = Math.min(oRow1, oRow2); const oMax = Math.max(oRow1, oRow2);
+                    const crosses = (currentWire.side === 'right') ? (other.vCol > hVCol) : (other.vCol < hVCol);
+                    if (row >= oMin && row <= oMax && crosses) crossings.push(other.vCol);
+                }
+                return crossings.sort((a, b) => a - b);
+            }
+
+            drawHorizontalWithJumpers(y, xStart, xEnd, crossingCols, color, group, baseX = 360, isRightSide = false, style = 'solid', wireIndex = null) {
+                const leftX = Math.min(xStart, xEnd); const rightX = Math.max(xStart, xEnd);
+                let crossingXs = crossingCols.map(c => baseX + c * this.CONST.CELL_WIDTH).filter(x => x > leftX + 10 && x < rightX - 10);
+                crossingXs.sort((a, b) => a - b);
+                const hh = this.CONST.HUMP_HALF_WIDTH; const overlap = this.CONST.HUMP_OVERLAP;
+                const humps = crossingXs.map(cx => ({ start: cx - hh - overlap, end: cx + hh + overlap, cx }));
+                let pos = leftX;
+                for (let h of humps) {
+                    if (pos < h.start - 3) group.appendChild(this.createWirePath(`M ${pos} ${y} H ${h.start - 3}`, color, style, wireIndex));
+                    pos = Math.max(pos, h.end);
+                }
+                if (pos < rightX) group.appendChild(this.createWirePath(`M ${pos} ${y} H ${rightX}`, color, style, wireIndex));
+                const hH = this.CONST.HUMP_HEIGHT;
+                for (let h of humps) {
+                    const d = `M ${h.start},${y} C ${h.start + 12},${y - 28} ${h.cx - 15},${y - hH} ${h.cx},${y - hH} C ${h.cx + 15},${y - hH} ${h.end - 12},${y - 28} ${h.end},${y}`;
+                    group.appendChild(this.createWirePath(d, color, style, wireIndex));
+                }
+            }
+
+            renderAllWires() {
+                const svg = document.getElementById('wirechex-svg'); let group = document.getElementById('wires-group'); if (!group) return; group.innerHTML = '';
+                const GRID_LEFT = this.CONST.LEFT_OFFSET; 
+                const PORT_STUB_X = 330; 
+                const RIGHT_PORT_X = this.getRightPortX();
+                
+                // First pass: vertical runs (with style + data attr for Target 3 highlight)
+                for (let i = 0; i < this.wires.length; i++) {
+                    const wire = this.wires[i];
+                    const row1 = this.getPortRow(wire.from); const row2 = this.getPortRow(wire.to);
+                    const fromRight = this.dynamicPORTS[wire.from]?.side === 'right'; const toRight = this.dynamicPORTS[wire.to]?.side === 'right';
+                    const style = wire.style || 'solid';
+                    
+                    let xV;
+                    if (fromRight && toRight) {
+                        xV = this.CONST.LEFT_OFFSET + (wire.vCol * this.CONST.CELL_WIDTH);
+                    } else {
+                        xV = GRID_LEFT + (wire.vCol * this.CONST.CELL_WIDTH);
+                    }
+                    
+                    const y1 = 60 + row1 * this.CONST.CELL_HEIGHT; const y2 = 60 + row2 * this.CONST.CELL_HEIGHT;
+                    group.appendChild(this.createWirePath(`M ${xV} ${Math.min(y1,y2)} L ${xV} ${Math.max(y1,y2)}`, wire.color, style, i));
+                    
+                    // Persistent label next to vertical run (Target 3)
+                    if (wire.label && this.showWireLabels) {
+                        const labelX = xV + (fromRight && toRight ? 18 : 10);
+                        const labelY = Math.min(y1, y2) + 16;
+                        const labelText = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                        labelText.setAttribute("x", labelX); labelText.setAttribute("y", labelY);
+                        labelText.setAttribute("fill", "#1e2937"); labelText.setAttribute("font-size", "14"); labelText.setAttribute("font-weight", "800");
+                        labelText.setAttribute("text-anchor", "start"); labelText.textContent = wire.label.length > 12 ? wire.label.slice(0,11) + '…' : wire.label;
+                        group.appendChild(labelText);
+                    }
+                }
+                
+                // Second pass: stubs + horizontals + jumpers (pass style + index)
+                for (let i = 0; i < this.wires.length; i++) {
+                    const wire = this.wires[i]; const vCol = wire.vCol; const color = wire.color; const style = wire.style || 'solid';
+                    const row1 = this.getPortRow(wire.from); const row2 = this.getPortRow(wire.to);
+                    const fromRight = this.dynamicPORTS[wire.from]?.side === 'right'; const toRight = this.dynamicPORTS[wire.to]?.side === 'right';
+                    
+                    let xV;
+                    if (fromRight && toRight) {
+                        xV = this.CONST.LEFT_OFFSET + (vCol * this.CONST.CELL_WIDTH);
+                    } else {
+                        xV = GRID_LEFT + (vCol * this.CONST.CELL_WIDTH);
+                    }
+                    
+                    const y1 = 60 + row1 * this.CONST.CELL_HEIGHT; const y2 = 60 + row2 * this.CONST.CELL_HEIGHT;
+                    
+                    const stub1 = fromRight ? `M ${RIGHT_PORT_X},${y1} H ${RIGHT_PORT_X - this.CONST.PORT_STUB_LENGTH}` : `M ${PORT_STUB_X},${y1} H ${GRID_LEFT}`;
+                    group.appendChild(this.createWirePath(stub1, color, style, i));
+                    
+                    if (fromRight && toRight) {
+                        this.drawHorizontalWithJumpers(y1, RIGHT_PORT_X, xV, this.getCrossingsForHorizontal(row1, vCol, wire), color, group, this.CONST.LEFT_OFFSET, true, style, i);
+                    } else {
+                        this.drawHorizontalWithJumpers(y1, GRID_LEFT, xV, this.getCrossingsForHorizontal(row1, vCol, wire), color, group, GRID_LEFT, false, style, i);
+                    }
+                    
+                    const stub2 = toRight ? `M ${RIGHT_PORT_X},${y2} H ${RIGHT_PORT_X - this.CONST.PORT_STUB_LENGTH}` : `M ${PORT_STUB_X},${y2} H ${GRID_LEFT}`;
+                    group.appendChild(this.createWirePath(stub2, color, style, i));
+                    
+                    if (fromRight && toRight) {
+                        this.drawHorizontalWithJumpers(y2, RIGHT_PORT_X, xV, this.getCrossingsForHorizontal(row2, vCol, wire), color, group, this.CONST.LEFT_OFFSET, true, style, i);
+                    } else {
+                        this.drawHorizontalWithJumpers(y2, xV, GRID_LEFT, this.getCrossingsForHorizontal(row2, vCol, wire), color, group, GRID_LEFT, false, style, i);
+                    }
+                }
+            }
+
+            addWire(from, to, color) {
+                if (!from || !to || from === to) return false;
+                const row1 = this.getPortRow(from); const row2 = this.getPortRow(to);
+                const fromRight = this.dynamicPORTS[from]?.side === 'right'; const toRight = this.dynamicPORTS[to]?.side === 'right';
+                const wireSide = (fromRight && toRight) ? 'right' : 'left';
+                const vCol = this.findLeftmostFreeColumn(row1, row2, wireSide); const prefix = wireSide === 'right' ? 'R' : 'L';
+                const nodes = [row1 + "," + prefix + "0", row1 + "," + prefix + vCol];
+                for (let r = Math.min(row1, row2); r <= Math.max(row1, row2); r++) nodes.push(r + "," + prefix + vCol);
+                nodes.push(row2 + "," + prefix + vCol, row2 + "," + prefix + "0"); nodes.forEach(n => this.occupied.add(n));
+                this.wires.push({from, to, color, vCol, side: wireSide, style: 'solid', label: ''}); this.updatePortColors(); this.saveToLocalStorage(); return true;
+            }
+
+            reoccupyAllWires() {
+                this.occupied.clear();
+                this.wires.forEach(w => {
+                    const row1 = this.getPortRow(w.from); const row2 = this.getPortRow(w.to); const prefix = w.side === 'right' ? 'R' : 'L';
+                    const nodes = [row1 + "," + prefix + "0", row1 + "," + prefix + w.vCol];
+                    for (let r = Math.min(row1, row2); r <= Math.max(row1, row2); r++) nodes.push(r + "," + prefix + w.vCol);
+                    nodes.push(row2 + "," + prefix + w.vCol, row2 + "," + prefix + "0"); nodes.forEach(n => this.occupied.add(n));
+                });
+            }
+
+            redrawEverything() {
+                const svg = document.getElementById('wirechex-svg'); svg.innerHTML = '';
+                this.drawGrid(svg); this.drawDeviceBoxes(svg); this.drawPorts(svg);
+                const wiresGroup = document.createElementNS("http://www.w3.org/2000/svg", "g"); wiresGroup.setAttribute("id", "wires-group"); svg.appendChild(wiresGroup);
+                this.renderAllWires();
+            }
+
+            resizeGrid(newRows, newCols) {
+                this.ROWS = Math.max(8, Math.min(50, newRows)); this.COLS = Math.max(8, Math.min(30, newCols));
+                this.rebuildDynamicPorts();
+
+                // Re-route ALL existing wires optimally for the NEW grid size
+                // This fixes stale vCol from previous column counts causing wrong positions & long spans
+                this.occupied.clear();
+                this.wires.forEach(wire => {
+                    const row1 = this.getPortRow(wire.from);
+                    const row2 = this.getPortRow(wire.to);
+                    const fromRight = this.dynamicPORTS[wire.from]?.side === 'right';
+                    const toRight = this.dynamicPORTS[wire.to]?.side === 'right';
+                    const wireSide = (fromRight && toRight) ? 'right' : 'left';
+                    const newVCol = this.findLeftmostFreeColumn(row1, row2, wireSide);
+                    wire.vCol = newVCol;
+
+                    const prefix = wireSide === 'right' ? 'R' : 'L';
+                    const nodes = [
+                        row1 + "," + prefix + "0",
+                        row1 + "," + prefix + newVCol
+                    ];
+                    for (let r = Math.min(row1, row2); r <= Math.max(row1, row2); r++) {
+                        nodes.push(r + "," + prefix + newVCol);
+                    }
+                    nodes.push(row2 + "," + prefix + newVCol, row2 + "," + prefix + "0");
+                    nodes.forEach(n => this.occupied.add(n));
+                });
+
+                this.redrawEverything();
+                this.saveToLocalStorage();
+            }
+
+            saveToLocalStorage() { try { localStorage.setItem('wirechex-v5.30', JSON.stringify({ devices: this.devices, wires: this.wires, showGrid: this.showGrid, showWireLabels: this.showWireLabels })); } catch(e){} }
+            loadFromLocalStorage() {
+                try { const saved = localStorage.getItem('wirechex-v5.30'); if (saved) { const data = JSON.parse(saved); if (data.devices?.length) this.devices = data.devices; if (data.wires) this.wires = data.wires; if (data.showGrid !== undefined) this.showGrid = data.showGrid; if (data.showWireLabels !== undefined) this.showWireLabels = data.showWireLabels; } } catch(e){}
+                // Normalize wires for Target 3+ properties (style/label)
+                this.wires.forEach(w => { if (!w.style) w.style = 'solid'; if (!w.label) w.label = ''; });
+            }
+        }
+
+        let engine = new WireChexEngine();
+        let currentSelectedDeviceId = null;
+
+        const WIRE_LEGEND = { '#06b6d4': 'Network', '#ef4444': 'Power', '#10b981': 'Coax', '#f59e0b': 'Transducer', '#eab308': 'Ground', '#8b5cf6': 'Audio', '#854d0e': 'Video', '#ec4899': 'Other', '#000000': 'N2K' };
+
+        function renderLegend() {
+            const container = document.getElementById('wire-legend');
+            container.innerHTML = Object.entries(WIRE_LEGEND).map(([color, label]) => `<div class="flex items-center gap-3 bg-slate-800 rounded-2xl px-4 py-2"><div class="w-6 h-6 rounded-xl flex-shrink-0" style="background: ${color};"></div><span class="font-medium text-slate-200">${label}</span></div>`).join('');
+        }
+
+        function renderDeviceList() {
+            const container = document.getElementById('device-list');
+            container.innerHTML = engine.devices.map(dev => `<div class="flex items-center justify-between bg-slate-800 rounded-2xl px-4 py-3"><div class="flex items-center gap-3"><div class="w-6 h-6 rounded-xl flex-shrink-0" style="background: ${dev.boxColor};"></div><div><span class="font-semibold">${dev.name}</span>${dev.location ? `<span class="text-xs text-slate-400 ml-2">${dev.location}</span>` : ''}<span class="text-xs text-slate-400 ml-2">(${dev.ports} ports)</span></div></div><button onclick="deleteDevice('${dev.id}')" class="text-red-400 hover:text-red-500 text-xl px-3 py-1">🗑️</button></div>`).join('');
+        }
+
+        function deleteDevice(deviceId) {
+            if (confirm("Delete this device and ALL wires connected to it?")) {
+                engine.deleteDevice(deviceId); engine.redrawEverything(); populateSelects(); updateUI(); renderDeviceList(); clearSelection();
+            }
+        }
+
+        function deleteWire(index) {
+            if (confirm("Delete this wire?")) {
+                engine.deleteWire(index); engine.redrawEverything(); populateSelects(); updateUI(); clearSelection();
+            }
+        }
+
+        // ========== PHASE 3 TARGET 3: WIRE POWER FEATURES ==========
+        function highlightWire(index) {
+            const svg = document.getElementById('wirechex-svg');
+            if (!svg) return;
+            // Remove previous highlights
+            svg.querySelectorAll('.wire-path-highlight').forEach(el => el.classList.remove('wire-path-highlight'));
+            // Add highlight to all paths for this wire
+            const paths = svg.querySelectorAll(`[data-wire-index="${index}"]`);
+            paths.forEach(p => p.classList.add('wire-path-highlight'));
+            // Auto-remove after animation
+            setTimeout(() => {
+                paths.forEach(p => p.classList.remove('wire-path-highlight'));
+            }, 3000);
+        }
+
+        function reverseWire(index) {
+            if (!engine.wires[index]) return;
+            const w = engine.wires[index];
+            [w.from, w.to] = [w.to, w.from]; // swap
+            engine.reoccupyAllWires(); engine.redrawEverything(); updateUI();
+            showToast(`Wire reversed! ↔️`, 'success');
+        }
+
+        function cycleWireStyle(index) {
+            if (!engine.wires[index]) return;
+            const w = engine.wires[index];
+            const styles = ['solid', 'dashed', 'dotted'];
+            let idx = styles.indexOf(w.style || 'solid');
+            w.style = styles[(idx + 1) % 3];
+            engine.redrawEverything(); updateUI();
+        }
+
+        function editWireLabel(index) {
+            if (!engine.wires[index]) return;
+            const w = engine.wires[index];
+            const newLabel = prompt('Wire label (leave empty to clear):', w.label || '');
+            if (newLabel !== null) {
+                w.label = newLabel.trim();
+                engine.redrawEverything(); updateUI();
+            }
+        }
+
+        function selectDevice(deviceId) {
+            currentSelectedDeviceId = deviceId;
+            const dev = engine.devices.find(d => d.id === deviceId); if (!dev) return;
+            const inspector = document.getElementById('device-inspector');
+            const content = document.getElementById('inspector-content');
+            const connectedWires = engine.wires.filter(w => {
+                const fp = engine.dynamicPORTS[w.from]; const tp = engine.dynamicPORTS[w.to];
+                return (fp && fp.deviceId === deviceId) || (tp && tp.deviceId === deviceId);
+            });
+            content.innerHTML = `
+                <div class="mb-4">
+                    <div class="flex items-center gap-3 mb-2">
+                        <div class="w-6 h-6 rounded-xl flex-shrink-0" style="background: ${dev.boxColor};"></div>
+                        <div class="flex-1 space-y-1">
+                            <input type="text" value="${dev.name}" class="font-bold text-xl bg-transparent border-b border-slate-600 focus:outline-none w-full px-1 py-0.5" placeholder="Device name" onchange="updateDeviceName('${deviceId}', this.value)">
+                            <input type="text" value="${dev.location || ''}" class="text-sm text-slate-400 bg-transparent border-b border-slate-600 focus:outline-none w-full px-1 py-0.5" placeholder="Location (e.g. *Behind Helm)" onchange="updateDeviceLocation('${deviceId}', this.value)">
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-slate-800 rounded-2xl p-4 mb-4"><div class="text-xs text-slate-400 mb-1">PORTS</div><div class="font-mono text-sm">${dev.ports} ports</div></div>
+                <div class="bg-slate-800 rounded-2xl p-4 mb-4"><div class="text-xs text-slate-400 mb-2">CONNECTED WIRES (${connectedWires.length})</div>${connectedWires.length > 0 ? connectedWires.map(w => `<div class="flex items-center justify-between text-sm py-1 border-b border-slate-700 last:border-0"><div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full" style="background: ${w.color};"></div><span>${w.from} → ${w.to}</span></div><span class="text-xs text-slate-400">col ${w.vCol}</span></div>`).join('') : '<div class="text-sm text-slate-400">No connections</div>'}</div>
+                
+                <div class="flex items-center justify-between bg-slate-800 rounded-2xl p-3 mb-4">
+                    <div class="text-sm text-slate-400">Device Color</div>
+                    <input type="color" value="${dev.boxColor}" class="w-12 h-10 bg-slate-700 border border-slate-600 rounded-2xl cursor-pointer" onchange="updateDeviceColor('${deviceId}', this.value)">
+                </div>
+
+                <div class="flex gap-2"><button onclick="deleteSelectedDevice()" class="flex-1 bg-red-600 hover:bg-red-500 text-sm py-2 rounded-2xl">Delete</button><button onclick="saveAndCloseInspector()" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-sm py-2 rounded-2xl">Save</button></div>
+            `;
+            inspector.classList.remove('hidden'); inspector.classList.add('flex', 'flex-col');
+            engine.redrawEverything();
+        }
+
+        function clearSelection() {
+            currentSelectedDeviceId = null;
+            const inspector = document.getElementById('device-inspector');
+            inspector.classList.add('hidden'); inspector.classList.remove('flex', 'flex-col');
+            engine.redrawEverything();
+        }
+
+        function updateDeviceColor(deviceId, newColor) {
+            const dev = engine.devices.find(d => d.id === deviceId);
+            if (!dev) return;
+            dev.boxColor = newColor;
+            engine.redrawEverything();
+        }
+
+        function updateDeviceName(deviceId, newName) {
+            const dev = engine.devices.find(d => d.id === deviceId);
+            if (!dev) return;
+            const trimmed = newName.trim();
+            if (trimmed === '') return; // prevent empty name
+            dev.name = trimmed;
+            engine.redrawEverything();
+        }
+
+        function updateDeviceLocation(deviceId, newLocation) {
+            const dev = engine.devices.find(d => d.id === deviceId);
+            if (!dev) return;
+            dev.location = newLocation.trim();
+            engine.redrawEverything();
+        }
+
+        function saveAndCloseInspector() {
+            if (currentSelectedDeviceId) {
+                engine.saveToLocalStorage();
+            }
+            clearSelection();
+        }
+
+        function deleteSelectedDevice() {
+            if (!currentSelectedDeviceId) return;
+            if (confirm("Delete this device and all its wires?")) {
+                engine.deleteDevice(currentSelectedDeviceId);
+                clearSelection(); engine.redrawEverything(); populateSelects(); updateUI(); renderDeviceList();
+            }
+        }
+
+        // ========== PHASE 3 TARGET 2: ENHANCED ADD DEVICE UX ==========
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : '⚠️';
+            const bg = type === 'success' ? 'bg-emerald-600' : type === 'error' ? 'bg-red-600' : 'bg-amber-600';
+            toast.className = `pointer-events-auto flex items-center gap-3 ${bg} text-white px-5 py-3 rounded-3xl shadow-2xl max-w-[280px] animate-fade-in`;
+            toast.innerHTML = `
+                <div class="text-xl flex-shrink-0">${icon}</div>
+                <div class="font-semibold text-sm leading-tight pr-1">${message}</div>
+            `;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.transition = 'opacity 0.25s ease, transform 0.25s ease';
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(30px)';
+                setTimeout(() => toast.remove(), 220);
+            }, 2600);
+        }
+
+        function selectSideUI(side) {
+            const leftCard = document.getElementById('side-card-left');
+            const rightCard = document.getElementById('side-card-right');
+            const sideSelect = document.getElementById('new-device-side');
+            
+            if (side === 'left') {
+                leftCard.classList.add('border-emerald-500', 'bg-emerald-950/40');
+                leftCard.classList.remove('border-slate-700', 'bg-slate-800');
+                rightCard.classList.remove('border-emerald-500', 'bg-emerald-950/40');
+                rightCard.classList.add('border-slate-700', 'bg-slate-800');
+                sideSelect.value = 'left';
+            } else {
+                rightCard.classList.add('border-emerald-500', 'bg-emerald-950/40');
+                rightCard.classList.remove('border-slate-700', 'bg-slate-800');
+                leftCard.classList.remove('border-emerald-500', 'bg-emerald-950/40');
+                leftCard.classList.add('border-slate-700', 'bg-slate-800');
+                sideSelect.value = 'right';
+            }
+            updateLivePreview();
+        }
+
+        function updateColorPreview() {
+            const color = document.getElementById('new-device-color').value;
+            const swatch = document.getElementById('color-preview-swatch');
+            if (swatch) {
+                swatch.style.background = color;
+                swatch.style.color = '#fff';
+                // Adjust text color for dark colors
+                const r = parseInt(color.slice(1,3),16); const g = parseInt(color.slice(3,5),16); const b = parseInt(color.slice(5,7),16);
+                const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+                swatch.style.color = brightness > 140 ? '#111' : '#fff';
+                swatch.style.textShadow = brightness > 140 ? '0 1px 2px rgba(255,255,255,.3)' : '0 1px 2px rgba(0,0,0,.5)';
+            }
+            updateLivePreview();
+        }
+
+        function updateLivePreview() {
+            const nameEl = document.getElementById('preview-name');
+            const locEl = document.getElementById('preview-loc');
+            const dotsContainer = document.getElementById('preview-ports-dots');
+            const previewBox = document.getElementById('live-device-preview');
+            const color = document.getElementById('new-device-color').value;
+            const name = document.getElementById('new-device-name').value.trim() || 'PREVIEW';
+            const loc = document.getElementById('new-device-location').value.trim() || '';
+            const ports = parseInt(document.getElementById('new-device-ports').value) || 4;
+
+            if (!nameEl || !previewBox) return;
+
+            nameEl.textContent = name.toUpperCase().slice(0, 11);
+            locEl.textContent = loc ? loc.slice(0, 18) + (loc.length > 18 ? '…' : '') : '—';
+
+            // Update box border color to match device color
+            previewBox.style.borderColor = color;
+
+            // Render port dots
+            dotsContainer.innerHTML = '';
+            for (let i = 0; i < ports; i++) {
+                const dot = document.createElement('div');
+                dot.className = 'w-2 h-2 rounded-full border border-black/60';
+                dot.style.background = color;
+                dotsContainer.appendChild(dot);
+            }
+        }
+
+        function useQuickTemplate(templateIndex) {
+            const templates = [
+                { name: 'A', ports: 4, color: '#3b82f6', side: 'left', loc: '' },
+                { name: 'B', ports: 4, color: '#10b981', side: 'left', loc: '' },
+                { name: 'C', ports: 2, color: '#8b5cf6', side: 'left', loc: '' },
+                { name: 'R', ports: 6, color: '#10b981', side: 'right', loc: 'Starboard' },
+                { name: 'Busbar', ports: 6, color: '#eab308', side: 'right', loc: 'Power Distribution' }
+            ];
+            const t = templates[templateIndex];
+            if (!t) return;
+
+            document.getElementById('new-device-name').value = t.name;
+            document.getElementById('new-device-location').value = t.loc;
+            document.getElementById('new-device-ports').value = t.ports;
+            document.getElementById('new-device-color').value = t.color;
+            document.getElementById('new-device-side').value = t.side;
+
+            // Update UI selectors
+            selectSideUI(t.side);
+            updateColorPreview();
+            updateLivePreview();
+
+            // Auto-add for speed (quick template magic!)
+            setTimeout(() => {
+                const success = engine.addDevice(t.name, t.ports, t.color, t.loc, t.side);
+                if (success) {
+                    engine.redrawEverything(); populateSelects(); updateUI(); renderDeviceList();
+                    showToast(`Quick added: ${t.name} (${t.ports}-port ${t.side}) ⚡`, 'success');
+                }
+                // Clear form after quick add
+                document.getElementById('new-device-name').value = '';
+                document.getElementById('new-device-location').value = '';
+                updateLivePreview();
+            }, 80);
+        }
+
+        function addNewDevice() {
+            const nameEl = document.getElementById('new-device-name');
+            const name = nameEl.value.trim();
+            const location = document.getElementById('new-device-location').value.trim();
+            const ports = parseInt(document.getElementById('new-device-ports').value);
+            const color = document.getElementById('new-device-color').value;
+            const side = document.getElementById('new-device-side').value || 'left';
+
+            if (!name) {
+                showToast('Device name is required!', 'error');
+                nameEl.focus();
+                return;
+            }
+            if (ports < 1 || ports > 6) {
+                showToast('Invalid port count (1-6 only).', 'error');
+                return;
+            }
+
+            const success = engine.addDevice(name, ports, color, location, side);
+            if (success) {
+                engine.redrawEverything(); populateSelects(); updateUI(); renderDeviceList();
+                nameEl.value = ''; document.getElementById('new-device-location').value = '';
+                updateLivePreview(); // reset preview
+                showToast(`Device added! 🎉`, 'success');
+            } else {
+                showToast('Could not add device (duplicate or invalid).', 'error');
+            }
+        }
+
+        function addWire() {
+            const from = document.getElementById('port-from').value;
+            const to = document.getElementById('port-to').value;
+            const color = document.getElementById('wire-color').value;
+            if (engine.addWire(from, to, color)) {
+                engine.redrawEverything(); updateUI();
+            } else alert("Select two different ports");
+        }
+
+        function updateUI() {
+            const log = document.getElementById('occupied-log');
+            log.textContent = Array.from(engine.occupied).sort().join('\n') || 'Empty';
+            const list = document.getElementById('wire-list');
+            list.innerHTML = engine.wires.map((w, index) => {
+                const styleIcon = w.style === 'dashed' ? '╌' : w.style === 'dotted' ? '⋯' : '━';
+                const labelText = w.label ? `<span class="text-xs text-emerald-400 ml-1">(${w.label})</span>` : '';
+                return `
+                <div onclick="highlightWire(${index})" class="flex items-center justify-between bg-slate-800 hover:bg-slate-700 rounded-2xl px-4 py-3 cursor-pointer transition-colors">
+                    <div class="flex items-center gap-3">
+                        <div class="w-5 h-5 rounded-full flex-shrink-0" style="background: ${w.color}; box-shadow: 0 0 0 3px rgba(255,255,255,0.2);"></div>
+                        <span class="font-semibold">${w.from} → ${w.to}${labelText}</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="font-mono text-slate-400 text-xs">col ${w.vCol}</span>
+                        <button onclick="event.stopImmediatePropagation(); cycleWireStyle(${index})" class="px-1.5 py-0.5 text-lg hover:bg-slate-600 rounded" title="Cycle style (${w.style})">${styleIcon}</button>
+                        <button onclick="event.stopImmediatePropagation(); editWireLabel(${index})" class="text-emerald-400 hover:text-emerald-300 text-lg px-1 py-0.5" title="Edit label">✏️</button>
+                        <button onclick="event.stopImmediatePropagation(); reverseWire(${index})" class="text-blue-400 hover:text-blue-300 text-lg px-1 py-0.5" title="Reverse direction">↔️</button>
+                        <button onclick="event.stopImmediatePropagation(); deleteWire(${index})" class="text-red-400 hover:text-red-500 text-xl px-1 py-0.5">🗑️</button>
+                    </div>
+                </div>
+                `;
+            }).join('');
+        }
+
+        function populateSelects() {
+            const fromSel = document.getElementById('port-from');
+            const toSel = document.getElementById('port-to');
+            fromSel.innerHTML = toSel.innerHTML = '<option value="">Select port...</option>';
+            Object.keys(engine.dynamicPORTS).forEach(p => {
+                const opt = document.createElement('option'); opt.value = p; opt.textContent = p;
+                fromSel.appendChild(opt.cloneNode(true)); toSel.appendChild(opt);
+            });
+        }
+
+        function resizeGrid() {
+            const rows = parseInt(document.getElementById('grid-rows').value) || 20;
+            const cols = parseInt(document.getElementById('grid-cols').value) || 10;
+            engine.resizeGrid(rows, cols); populateSelects(); renderDeviceList();
+        }
+
+        function zoomIn() {
+            engine.zoomLevel = Math.min(engine.zoomLevel + 0.25, 2);
+            document.getElementById('wirechex-svg').style.transform = `scale(${engine.zoomLevel})`;
+            document.getElementById('zoom-level').textContent = Math.round(engine.zoomLevel * 100) + '%';
+        }
+
+        function zoomOut() {
+            engine.zoomLevel = Math.max(engine.zoomLevel - 0.25, 0.5);
+            document.getElementById('wirechex-svg').style.transform = `scale(${engine.zoomLevel})`;
+            document.getElementById('zoom-level').textContent = Math.round(engine.zoomLevel * 100) + '%';
+        }
+
+        function toggleGrid() {
+            engine.showGrid = !engine.showGrid;
+            engine.redrawEverything();
+            updateToggleButtons();
+        }
+
+        function toggleWireLabels() {
+            engine.showWireLabels = !engine.showWireLabels;
+            engine.redrawEverything();
+            updateToggleButtons();
+        }
+
+        function updateToggleButtons() {
+            const gridBtn = document.getElementById('grid-toggle-btn');
+            const labelsBtn = document.getElementById('labels-toggle-btn');
+            if (gridBtn) {
+                gridBtn.innerHTML = engine.showGrid ? '📐 Grid <span class="text-emerald-400">ON</span>' : '📐 Grid <span class="text-slate-400">OFF</span>';
+            }
+            if (labelsBtn) {
+                labelsBtn.innerHTML = engine.showWireLabels ? '🏷️ Labels <span class="text-emerald-400">ON</span>' : '🏷️ Labels <span class="text-slate-400">OFF</span>';
+            }
+        }
+
+        function resetAll() { localStorage.removeItem('wirechex-v5.30'); location.reload(); }
+
+        function clearAllWires() {
+            if (confirm("Clear ALL wires? This cannot be undone.")) {
+                engine.wires = []; engine.occupied.clear(); engine.redrawEverything(); updateUI(); engine.saveToLocalStorage();
+            }
+        }
+
+        function downloadSVG() {
+            const svg = document.getElementById('wirechex-svg');
+            const blob = new Blob([svg.outerHTML], {type: 'image/svg+xml'});
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'wirechex-v5.30.svg'; a.click(); URL.revokeObjectURL(a.href);
+        }
+
+        window.onload = () => {
+            engine.redrawEverything(); populateSelects(); renderLegend(); updateUI(); renderDeviceList();
+            
+            // Phase 3 Target 2 initialization
+            const sideSelect = document.getElementById('new-device-side');
+            if (sideSelect) sideSelect.value = 'left';
+            selectSideUI('left'); // set initial active card
+            updateColorPreview();
+            updateLivePreview();
+            updateToggleButtons();
+            
+            // Bonus: Enter key on any add field triggers add (already on name, but global)
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    const nameEl = document.getElementById('new-device-name');
+                    if (document.activeElement === nameEl || document.activeElement.closest('#new-device-location')) {
+                        nameEl.value = ''; document.getElementById('new-device-location').value = '';
+                        updateLivePreview();
+                        showToast('Form cleared', 'success');
+                    }
+                }
+            });
+            
+            // Easter egg: click logo/title to add random test device
+            const title = document.querySelector('h1');
+            if (title) title.onclick = () => { useQuickTemplate(Math.floor(Math.random()*5)); };
+        };
+    </script>
+</body>
+</html>
